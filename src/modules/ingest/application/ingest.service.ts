@@ -1,13 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { VectorStore } from '../../rag/domain/vector-store.interface';
+import { IngestDocument } from '../domain/ingest-document.interface';
 import { randomUUID } from 'crypto';
-
-interface IngestDocument {
-  id: string;
-  text: string;
-  source?: string;
-  timestamp: string;
-}
 
 @Injectable()
 export class IngestService {
@@ -15,7 +9,7 @@ export class IngestService {
 
   constructor(
     @Inject('VectorStore') private readonly vectorStore: VectorStore,
-  ) {}
+  ) { }
 
   /**
    * Ingresa un arreglo de textos al vector store, fragmentando si es necesario.
@@ -55,8 +49,8 @@ export class IngestService {
         error instanceof Error
           ? error.message
           : typeof error === 'string'
-          ? error
-          : JSON.stringify(error);
+            ? error
+            : JSON.stringify(error);
       this.logger.error(
         `Error al ingresar documentos desde ${source ?? 'sin fuente'}: ${errorMessage}`
       );

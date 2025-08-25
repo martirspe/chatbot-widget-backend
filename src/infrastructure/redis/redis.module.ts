@@ -8,7 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
         type: 'single',
-        url: config.get<string>('REDIS_URL', 'redis://localhost:6379'),
+        url: config.get<string>('REDIS_URL'),
       }),
       inject: [ConfigService],
     }),
