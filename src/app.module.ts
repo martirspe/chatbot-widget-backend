@@ -21,4 +21,4 @@ import { RedisModule } from './infrastructure/redis/redis.module';
     IngestModule
   ],
 })
-export class AppModule {}
+export class AppModule { }

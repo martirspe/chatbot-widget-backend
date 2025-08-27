@@ -44,5 +44,5 @@ export class ChatService {
   async getCachedMessage(key: string): Promise<string | null> {
     return await this.redis.get(key);
   }
-  
+
 }

@@ -1,0 +1,1 @@
+export enum RagMode { LLM = 'llm', QDRANT = 'qdrant', BOTH = 'both', }

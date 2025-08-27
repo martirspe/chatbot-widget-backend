@@ -1,8 +1,7 @@
 import { Injectable, Inject, InternalServerErrorException } from '@nestjs/common';
 import { VectorStore } from '../domain/vector-store.interface';
 import { LLMClient } from '../domain/llm-client.interface';
-
-type RagMode = 'llm' | 'qdrant' | 'both';
+import { RagMode } from '../domain/rag-mode.interface';
 
 @Injectable()
 export class RagService {
@@ -31,9 +30,16 @@ export class RagService {
   }
 
   private getMode(): RagMode {
-    const mode = (process.env.RAG_MODE || 'both').toLowerCase();
-    if (mode === 'llm' || mode === 'qdrant' || mode === 'both') return mode as RagMode;
-    return 'both';
+    const mode = (process.env.RAG_MODE || RagMode.BOTH).toLowerCase();
+    switch (mode) {
+      case RagMode.LLM:
+        return RagMode.LLM;
+      case RagMode.QDRANT:
+        return RagMode.QDRANT;
+      case RagMode.BOTH:
+      default:
+        return RagMode.BOTH;
+    }
   }
 
   private async llmOnlyAnswer(query: string) {

@@ -14,8 +14,8 @@ function generateDeterministicUuid(text: string, source?: string): string {
 
 @Injectable()
 export class QdrantStore implements VectorStore {
-  private readonly url = process.env.QDRANT_URL || 'http://localhost:6333';
-  private readonly collection = process.env.QDRANT_COLLECTION || 'docs';
+  private readonly url = process.env.QDRANT_URL;
+  private readonly collection = process.env.QDRANT_COLLECTION;
 
   constructor(
     @Inject('EmbeddingClient') private readonly embeddingClient: EmbeddingClient
@@ -30,7 +30,8 @@ export class QdrantStore implements VectorStore {
         },
       });
     } catch (error: any) {
-      if (error.response?.status !== 400) throw error;
+      /* if (error.response?.status !== 400) throw error; */
+      if (![400, 409].includes(error.response?.status)) throw error;
     }
   }
 

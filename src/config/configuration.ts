@@ -22,7 +22,7 @@ export default () => ({
   redisUrl: process.env.REDIS_URL,
   magento: { baseUrl: process.env.MAGENTO_BASE_URL, token: process.env.MAGENTO_ACCESS_TOKEN },
   openaiKey: process.env.OPENAI_API_KEY,
-  qdrant: { url: process.env.QDRANT_URL, collection: process.env.QDRANT_COLLECTION || 'docs' },
+  qdrant: { url: process.env.QDRANT_URL, collection: process.env.QDRANT_COLLECTION },
 });
 
 export function validate(config: Record<string, unknown>) {

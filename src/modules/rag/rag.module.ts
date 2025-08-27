@@ -19,4 +19,4 @@ const embeddingProvider = process.env.OPENAI_API_KEY
   ],
   exports: [RagService, 'VectorStore', 'EmbeddingClient'],
 })
-export class RagModule {}
+export class RagModule { }

@@ -6,6 +6,9 @@
 /out-tsc
 /bazel-out
 
+# Prisma migrations
+/prisma/migrations/
+
 # Environment files
 .env
 
