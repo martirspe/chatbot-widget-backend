@@ -1,16 +1,22 @@
-import { Injectable, Inject, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Inject, InternalServerErrorException, Logger } from '@nestjs/common';
 import { VectorStore } from '../domain/vector-store.interface';
 import { LLMClient } from '../domain/llm-client.interface';
 import { RagMode } from '../domain/rag-mode.interface';
+import { formatError } from '../../../common/utils/error.utils';
 
+// Servicio RAG para generar respuestas usando búsqueda semántica y LLM.
 @Injectable()
 export class RagService {
+  private readonly logger = new Logger(RagService.name);
+
+  // Inyecta el servicio de búsqueda vectorial y el cliente LLM.
   constructor(
     @Inject('VectorStore') private readonly vectorStore: VectorStore,
     @Inject('LLMClient') private readonly llm: LLMClient,
   ) { }
 
-  async answer(query: string) {
+  // Genera una respuesta según el modo configurado y los parámetros de búsqueda.
+  async answer(query: string, topK: number = 1, minScore: number = 0.7, source?: string) {
     if (this.isTestMode()) {
       return this.mockAnswer(query);
     }
@@ -18,17 +24,19 @@ export class RagService {
       case 'llm':
         return this.llmOnlyAnswer(query);
       case 'qdrant':
-        return this.qdrantOnlyAnswer(query);
+        return this.qdrantOnlyAnswer(query, topK, minScore, source);
       case 'both':
       default:
-        return this.realAnswerSafe(query);
+        return this.realAnswerSafe(query, topK, minScore, source);
     }
   }
 
+  // Verifica si está activado el modo de prueba.
   private isTestMode(): boolean {
     return process.env.RAG_TEST_MODE === 'true';
   }
 
+  // Obtiene el modo de operación configurado.
   private getMode(): RagMode {
     const mode = (process.env.RAG_MODE || RagMode.BOTH).toLowerCase();
     switch (mode) {
@@ -42,49 +50,43 @@ export class RagService {
     }
   }
 
+  // Genera respuesta solo con LLM, sin contexto documental.
   private async llmOnlyAnswer(query: string) {
     try {
       const reply = await this.llm.generate(query, []);
-      return { reply, context: [], documents: [] }; // <-- cambia docs por documents
+      return { reply, context: [], documents: [] };
     } catch (error) {
-      console.error('Error en LLM:', error);
+      this.logger.error(`Error en LLM: ${formatError(error)}`);
       throw new InternalServerErrorException('No se pudo obtener respuesta del LLM.');
     }
   }
 
-  private async qdrantOnlyAnswer(query: string) {
-    try {
-      const docs = await this.vectorStore.search(query, 3);
-      if (!docs || docs.length === 0) {
-        return {
-          reply: 'No se encontró información relevante para tu consulta.',
-          context: [],
-          documents: []
-        };
-      }
+  // Busca documentos relevantes solo en Qdrant y retorna el resultado.
+  private async qdrantOnlyAnswer(query: string, topK: number, minScore: number, source?: string) {
+    const docs = await this.vectorStore.search(query, topK, minScore, source);
+    if (!docs || docs.length === 0) {
       return {
-        reply: 'Documentos encontrados.',
-        context: docs.map(d => d.text),
-        documents: docs
+        reply: 'No se encontró información relevante para tu consulta.',
+        context: [],
+        documents: []
       };
-    } catch (error) {
-      console.error('Error en Qdrant:', error);
-      throw new InternalServerErrorException('No se pudo obtener respuesta de Qdrant.');
     }
+    return {
+      reply: 'Documentos encontrados.',
+      context: docs.map(d => d.text),
+      documents: docs
+    };
   }
 
-  private async realAnswerSafe(query: string) {
-    try {
-      const docs = await this.vectorStore.search(query, 3);
-      const context = docs.map((d) => d.text);
-      const reply = await this.llm.generate(query, context);
-      return { reply, context, documents: docs }; // <-- cambia docs por documents
-    } catch (error) {
-      console.error('Error en RAG realAnswer:', error);
-      throw new InternalServerErrorException('No se pudo obtener respuesta del motor vectorial o LLM.');
-    }
+  // Busca documentos en Qdrant y genera respuesta con LLM usando el contexto.
+  private async realAnswerSafe(query: string, topK: number, minScore: number, source?: string) {
+    const docs = await this.vectorStore.search(query, topK, minScore, source);
+    const context = docs.map((d) => d.text);
+    const reply = await this.llm.generate(query, context);
+    return { reply, context, documents: docs };
   }
 
+  // Retorna una respuesta simulada para pruebas.
   private mockAnswer(query: string) {
     return {
       reply: `Respuesta simulada para: "${query}"`,

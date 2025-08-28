@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { RedisModule as NestRedisModule } from '@nestjs-modules/ioredis';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
+// Módulo que configura y exporta el cliente Redis usando variables de entorno.
 @Module({
   imports: [
     NestRedisModule.forRootAsync({

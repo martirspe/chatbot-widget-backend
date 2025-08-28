@@ -1,11 +1,13 @@
-
 import { Injectable, BadRequestException } from '@nestjs/common';
 import axios from 'axios';
 
-@Injectable() export class MagentoService {
+// Servicio para consultar el estado de órdenes en Magento usando la API REST.
+@Injectable()
+export class MagentoService {
   private base = process.env.MAGENTO_BASE_URL;
   private token = process.env.MAGENTO_ACCESS_TOKEN;
 
+  // Obtiene el estado de una orden por su ID usando la API de Magento.
   async getOrderStatus(orderId: string) {
     if (!orderId) throw new BadRequestException('orderId requerido');
     const url = `${this.base}/rest/V1/orders?searchCriteria[filterGroups][0][filters][0][field]=increment_id&searchCriteria[filterGroups][0][filters][0][value]=${orderId}&searchCriteria[filterGroups][0][filters][0][condition_type]=eq`;

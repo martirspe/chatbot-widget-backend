@@ -1,109 +1,140 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { v5 as uuidv5 } from 'uuid';
 import { VectorStore } from '../../domain/vector-store.interface';
 import { EmbeddingClient } from '../../domain/embedding-client.interface';
+import { QdrantSearchResult } from '../../domain/qdrant-search-result.interface';
+import { generateDeterministicUuid, normalizeText, fragmentText } from '../../../../common/utils/text.utils';
+import { formatError } from '../../../../common/utils/error.utils';
 
-// Namespace UUID para generar IDs determinísticos (puedes usar un valor fijo)
-const NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-function generateDeterministicUuid(text: string, source?: string): string {
-  // Usa UUID v5 para obtener un UUID válido y único por texto y fuente
-  return uuidv5((source ?? '') + '|' + text, NAMESPACE);
-}
-
+// Implementa la lógica de almacenamiento y búsqueda de vectores en Qdrant.
 @Injectable()
 export class QdrantStore implements VectorStore {
   private readonly url = process.env.QDRANT_URL;
   private readonly collection = process.env.QDRANT_COLLECTION;
+  private readonly logger = new Logger(QdrantStore.name);
 
+  // Inyecta el cliente de embeddings para generar vectores.
   constructor(
     @Inject('EmbeddingClient') private readonly embeddingClient: EmbeddingClient
-  ) {}
+  ) {
+    if (!this.url || !this.collection) {
+      throw new Error('QDRANT_URL y QDRANT_COLLECTION deben estar definidas en las variables de entorno.');
+    }
+  }
 
+  // Asegura que la colección de Qdrant exista antes de operar.
   async ensureCollection(): Promise<void> {
     try {
       await axios.put(`${this.url}/collections/${this.collection}`, {
         vectors: {
-          size: 1536,
+          size: 384,
           distance: 'Cosine',
         },
       });
+      this.logger.log(`Colección Qdrant '${this.collection}' asegurada.`);
     } catch (error: any) {
-      /* if (error.response?.status !== 400) throw error; */
-      if (![400, 409].includes(error.response?.status)) throw error;
+      if (error.response?.status === 409) {
+        this.logger.warn(`Colección Qdrant '${this.collection}' ya existe.`);
+        return;
+      }
+      this.logger.error(`Error asegurando colección Qdrant: ${formatError(error)}`);
+      throw error;
     }
   }
 
-  async upsert(docs: { text: string; source?: string }[]): Promise<void> {
+  // Inserta o actualiza documentos fragmentados y enriquecidos en la colección de Qdrant.
+  async upsert(docs: { text: string; source?: string; metadata?: Record<string, any> }[]): Promise<void> {
     await this.ensureCollection();
 
-    for (const doc of docs) {
-      // Usa solo el texto puro y la fuente para el ID y el embedding
+    const fragments = docs.flatMap(doc =>
+      fragmentText(doc.text).map(fragment => ({
+        text: fragment,
+        source: doc.source,
+        metadata: {
+          ...doc.metadata,
+          fragmentLength: fragment.length,
+          originalSource: doc.source,
+          indexedAt: new Date().toISOString()
+        }
+      }))
+    );
+
+    const points = await Promise.all(fragments.map(async doc => {
       const id = generateDeterministicUuid(doc.text, doc.source);
-      let vector: number[];
-
       try {
-        vector = await this.embeddingClient.embed(doc.text);
+        const vector = await this.embeddingClient.embed(doc.text);
+        return {
+          id,
+          vector,
+          payload: {
+            text: doc.text,
+            source: doc.source,
+            metadata: doc.metadata
+          }
+        };
       } catch (error: any) {
-        console.error('Error generando embedding:', error.message || error);
-        continue;
+        this.logger.error(`Error generando embedding para ID ${id}: ${error.message || error}`);
+        return null;
       }
+    }));
 
-      console.log(`ID generado: ${id} | Texto: ${doc.text} | Fuente: ${doc.source}`);
+    const validPoints = points.filter(p => p !== null);
 
-      // Consulta si el punto ya existe
-      let exists = false;
-      let needsUpdate = true;
+    // Consulta puntos existentes para evitar duplicados antes de upsert.
+    const existingIds = validPoints.map(p => p.id);
+    let existingPoints: Record<string, any> = {};
+    try {
+      const res = await axios.post(`${this.url}/collections/${this.collection}/points/scroll`, {
+        filter: { must: [{ key: 'id', match: { any: existingIds } }] },
+        limit: existingIds.length,
+      });
+      for (const point of res.data?.result?.points || []) {
+        existingPoints[point.id] = point.payload?.text;
+      }
+    } catch (error: any) {
+      this.logger.error(`Error consultando puntos existentes: ${formatError(error)}`);
+    }
+
+    // Filtra puntos que necesitan insert/update y realiza el upsert.
+    const pointsToUpsert = validPoints.filter(p => existingPoints[p.id] !== p.payload.text);
+
+    if (pointsToUpsert.length > 0) {
       try {
-        const res = await axios.post(`${this.url}/collections/${this.collection}/points/scroll`, {
-          filter: { must: [{ key: 'id', match: { value: id } }] },
-          limit: 1,
+        await axios.put(`${this.url}/collections/${this.collection}/points`, {
+          points: pointsToUpsert
         });
-        if (res.data?.result?.points?.length) {
-          exists = true;
-          const storedText = res.data.result.points[0].payload?.text;
-          needsUpdate = storedText !== doc.text;
-        }
+        this.logger.log(`Upserted ${pointsToUpsert.length} points`);
       } catch (error: any) {
-        console.error('Error consultando punto existente:', error.response?.data || error.message);
+        this.logger.error(`Qdrant error: ${formatError(error)}`);
       }
-
-      // Inserta o actualiza solo si es necesario
-      if (!exists || needsUpdate) {
-        try {
-          await axios.put(`${this.url}/collections/${this.collection}/points`, {
-            points: [{
-              id,
-              vector,
-              payload: { text: doc.text, source: doc.source },
-            }]
-          });
-          console.log(`Upserted point ${id} (${exists ? 'updated' : 'inserted'})`);
-        } catch (error: any) {
-          console.error('Qdrant error:', error.response?.data || error.message);
-        }
-      } else {
-        console.log(`Point ${id} already exists with same text, skipping upsert.`);
-      }
+    } else {
+      this.logger.log('No hay puntos nuevos o modificados para upsert.');
     }
   }
 
-  async search(query: string, topK: number) {
-    const vector = await this.embeddingClient.embed(query);
+  // Realiza una búsqueda semántica en Qdrant y retorna los resultados relevantes filtrados por score.
+  async search(query: string, topK: number, minScore: number, source?: string): Promise<QdrantSearchResult[]> {
+    const vector = await this.embeddingClient.embed(normalizeText(query));
+    const filter = source
+      ? { must: [{ key: 'source', match: { value: source } }] }
+      : undefined;
+
     const res = await axios.post(`${this.url}/collections/${this.collection}/points/search`, {
       vector,
       limit: topK,
-      with_payload: true
+      with_payload: true,
+      ...(filter && { filter })
     });
     const hits = res.data?.result || [];
+    console.log('Resultados Qdrant:', hits.length, hits.map((h: any) => h.id));
     return hits
-    .filter((h: any) => h.payload?.source?.toLowerCase().includes(query.toLowerCase()))
-    .map((h: any) => ({
-      id: h.id,
-      text: h.payload?.text || '',
-      source: h.payload?.source || '',
-      score: h.score,
-    }));
+      .filter((h: any) => typeof h.score === 'number' && h.score >= minScore)
+      .map((h: any) => ({
+        id: h.id,
+        text: h.payload?.text || '',
+        source: h.payload?.source || '',
+        score: h.score,
+        metadata: h.payload?.metadata || {}
+      }));
   }
 }

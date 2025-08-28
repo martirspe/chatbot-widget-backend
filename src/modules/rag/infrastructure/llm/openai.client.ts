@@ -2,10 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { LLMClient } from '../../domain/llm-client.interface';
 import OpenAI from 'openai';
 
+// Cliente LLM que utiliza la API de OpenAI para generar respuestas en español usando el modelo 'gpt-4o-mini'.
 @Injectable()
 export class OpenAiClient implements LLMClient {
   private client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+  // Genera una respuesta textual usando el prompt y contexto proporcionado.
   async generate(prompt: string, context: string[]): Promise<string> {
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       {

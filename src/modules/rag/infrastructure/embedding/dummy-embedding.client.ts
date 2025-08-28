@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { EmbeddingClient } from '../../domain/embedding-client.interface';
 
+// Cliente de embedding de prueba que retorna un vector fijo para simular el comportamiento de un modelo real.
 @Injectable()
 export class DummyEmbeddingClient implements EmbeddingClient {
+  
+  // Genera un embedding fijo de tamaño 1536 para cualquier texto, útil en pruebas y desarrollo.
   embed(text: string): Promise<number[]> {
-    // Vector de tamaño 1536 con valores fijos para pruebas
     return Promise.resolve(Array(1536).fill(0.1));
   }
 }

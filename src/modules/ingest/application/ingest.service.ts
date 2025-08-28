@@ -1,74 +1,48 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { VectorStore } from '../../rag/domain/vector-store.interface';
-import { IngestDocument } from '../domain/ingest-document.interface';
-import { randomUUID } from 'crypto';
+import { IngestDocDto } from '../dto/ingest-doc.dto';
+import { generateDeterministicUuid } from '../../../common/utils/text.utils';
+import { formatError } from '../../../common/utils/error.utils';
 
+// Servicio para procesar y enviar documentos enriquecidos al vector store.
 @Injectable()
 export class IngestService {
   private readonly logger = new Logger(IngestService.name);
 
+  // Inyecta el servicio de almacenamiento vectorial (Qdrant).
   constructor(
     @Inject('VectorStore') private readonly vectorStore: VectorStore,
   ) { }
 
-  /**
-   * Ingresa un arreglo de textos al vector store, fragmentando si es necesario.
-   * @param texts Array de textos a ingresar.
-   * @param source Fuente o nombre del documento original.
-   * @param chunkSize Tamaño máximo de cada fragmento (opcional, recomendado para rendimiento).
-   */
-  async ingestTexts(
-    texts: string[],
-    source?: string,
-    chunkSize: number = 1000
-  ) {
+  // Procesa y envía un arreglo de documentos enriquecidos al vector store.
+  async ingestDocs(docs: IngestDocDto[]) {
     const timestamp = new Date().toISOString();
-    const docs: IngestDocument[] = [];
 
-    for (const t of texts) {
-      // Fragmenta el texto si es muy largo
-      const chunks = this.chunkText(t, chunkSize);
-      for (const chunk of chunks) {
-        docs.push({
-          id: randomUUID(),
-          text: source ? `[${source}] ${chunk}` : chunk,
-          source,
-          timestamp,
-        });
+    // Genera ID determinístico y agrega metadata contextual a cada documento.
+    const enrichedDocs = docs.map(doc => ({
+      id: generateDeterministicUuid(doc.text, doc.source),
+      text: doc.text,
+      source: doc.source,
+      metadata: {
+        ...doc.metadata,
+        indexedAt: timestamp,
+        originalSource: doc.source,
       }
-    }
+    }));
 
     try {
-      await this.vectorStore.upsert(docs);
+      // Inserta los documentos en el vector store y retorna cantidad insertada y timestamp.
+      await this.vectorStore.upsert(enrichedDocs);
       this.logger.log(
-        `Ingestados ${docs.length} fragmentos desde ${source ?? 'sin fuente'}`
+        `Ingestados ${enrichedDocs.length} fragmentos enriquecidos`
       );
-      return { inserted: docs.length, source, timestamp };
+      return { inserted: enrichedDocs.length, timestamp };
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : JSON.stringify(error);
+      // Maneja errores de forma eficiente y los registra.
       this.logger.error(
-        `Error al ingresar documentos desde ${source ?? 'sin fuente'}: ${errorMessage}`
+        `Error al ingresar documentos enriquecidos: ${formatError(error)}`
       );
       throw error;
     }
-  }
-
-  /**
-   * Fragmenta un texto largo en trozos de tamaño máximo chunkSize.
-   */
-  private chunkText(text: string, chunkSize: number): string[] {
-    if (text.length <= chunkSize) return [text];
-    const chunks: string[] = [];
-    let i = 0;
-    while (i < text.length) {
-      chunks.push(text.slice(i, i + chunkSize));
-      i += chunkSize;
-    }
-    return chunks;
   }
 }

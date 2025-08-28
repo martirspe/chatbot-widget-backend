@@ -9,6 +9,7 @@ import { RagModule } from './modules/rag/rag.module';
 import { IngestModule } from './modules/ingest/ingest.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
 
+// Módulo raíz que agrupa configuración global, infraestructura y todos los módulos funcionales.
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate }),
