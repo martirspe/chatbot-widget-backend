@@ -5,6 +5,8 @@ import { RagService } from '../../rag/application/rag.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { formatError } from '../../../common/utils/error.utils';
+import { PromotionDto } from '../dto/promotion.dto';
+import { ChatRatingDto } from '../dto/chat-rating.dto';
 
 // Servicio principal para procesar mensajes de chat, gestionar sesiones y cachear respuestas.
 @Injectable()
@@ -21,7 +23,7 @@ export class ChatService {
   // Procesa el mensaje, gestiona sesión, consulta RAG y cachea la respuesta.
   async processMessage(dto: ChatMessageDto) {
     try {
-      const { text, sessionId, source, topK = 1, minScore = 0.7 } = dto;
+      const { text, sessionId, source, topK, minScore } = dto;
       const cacheKey = `chat:${sessionId}:${text}:${source ?? ''}:${topK}:${minScore}`;
       const cached = await this.getCachedMessage(cacheKey);
       if (cached && cached.startsWith('{')) {
@@ -31,7 +33,7 @@ export class ChatService {
 
       const sid = await this.repo.ensureSession(sessionId);
       await this.repo.addMessage({ role: 'user', text, sessionId: sid });
-      const { reply, documents } = await this.rag.answer(text, topK, minScore, source);
+      const { reply, documents } = await this.rag.answer(text, topK, minScore);
       await this.repo.addMessage({ role: 'assistant', text: reply, sessionId: sid });
 
       await this.cacheMessage(cacheKey, JSON.stringify({ reply, documents }));
@@ -53,4 +55,53 @@ export class ChatService {
     return await this.redis.get(key);
   }
 
+  // Marca la sesión para transferencia a un agente humano.
+  async transferToAgent(sessionId?: string) {
+    try {
+      const sid = await this.repo.ensureSession(sessionId);
+      await this.repo.addMessage({
+        role: 'user',
+        text: '[Solicitud de transferencia a agente humano]',
+        sessionId: sid
+      });
+      return {
+        sessionId: sid,
+        message: 'Un agente humano se pondrá en contacto contigo en breve.'
+      };
+    } catch (error) {
+      return {
+        sessionId: sessionId,
+        message: 'El agente se comunicará contigo pronto.'
+      };
+    }
+  }
+
+  async getPromotions(): Promise<PromotionDto[]> {
+    // Aquí puedes consultar la base de datos, un API externa, etc.
+    // Ejemplo estático:
+    return [
+      {
+        title: 'Descuento 20% en todo sandalias',
+        description: 'Aprovecha nuestro descuento especial hasta el 30 de septiembre.',
+        validUntil: '2025-09-30',
+        url: 'https://marrso.com/promociones'
+      },
+      {
+        title: 'Descuento 50% en todo botines',
+        description: 'Aprovecha nuestro descuento especial hasta el 30 de septiembre.',
+        validUntil: '2025-09-30',
+        url: 'https://marrso.com/promociones'
+      }
+    ];
+  }
+
+  async rateChat(dto: ChatRatingDto): Promise<{ success: boolean }> {
+    try {
+      await this.repo.saveRating(dto);
+      return { success: true };
+    } catch (error) {
+      this.logger.error('Error guardando calificación:', error);
+      return { success: false };
+    }
+  }
 }

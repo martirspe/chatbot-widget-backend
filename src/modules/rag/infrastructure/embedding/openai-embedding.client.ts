@@ -11,7 +11,7 @@ export class OpenAiEmbeddingClient implements EmbeddingClient {
     const apiKey = process.env.OPENAI_API_KEY;
     const response = await axios.post(
       'https://api.openai.com/v1/embeddings',
-      { input: text, model: 'text-embedding-ada-002' },
+      { input: text, model: 'text-embedding-3-small' },
       { headers: { Authorization: `Bearer ${apiKey}` } }
     );
     return response.data.data[0].embedding;

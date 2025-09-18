@@ -27,7 +27,7 @@ export class QdrantStore implements VectorStore {
     try {
       await axios.put(`${this.url}/collections/${this.collection}`, {
         vectors: {
-          size: 384,
+          size: 1536, // Tamaño del vector, ajustar según el modelo de embedding.
           distance: 'Cosine',
         },
       });

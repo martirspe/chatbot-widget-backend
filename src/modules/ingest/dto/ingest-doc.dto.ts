@@ -11,6 +11,10 @@ export class IngestDocDto {
   source?: string;
 
   @IsOptional()
+  @IsArray()
+  vector?: number[];
+
+  @IsOptional()
   metadata?: Record<string, any>;
 }
 

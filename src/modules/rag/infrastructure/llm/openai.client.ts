@@ -9,14 +9,20 @@ export class OpenAiClient implements LLMClient {
 
   // Genera una respuesta textual usando el prompt y contexto proporcionado.
   async generate(prompt: string, context: string[]): Promise<string> {
+    const contextText =
+      context.length > 0
+        ? `Utiliza únicamente la siguiente información para responder:\n${context.join('\n',)}\n\nPregunta: ${prompt}`
+        : prompt;
+
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       {
         role: 'system',
-        content: 'Eres Asistente MARRSO. Responde en español de forma cordial y precisa. No inventes datos.',
+        content:
+          'Eres Asistente MARRSO. Responde en español de forma cordial y precisa. No inventes datos.',
       },
       {
         role: 'user',
-        content: `${prompt}\n\nContexto:\n${context.join('\n')}`,
+        content: contextText,
       },
     ];
 

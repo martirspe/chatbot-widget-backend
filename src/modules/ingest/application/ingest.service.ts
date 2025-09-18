@@ -23,6 +23,7 @@ export class IngestService {
       id: generateDeterministicUuid(doc.text, doc.source),
       text: doc.text,
       source: doc.source,
+      vector: doc.vector,
       metadata: {
         ...doc.metadata,
         indexedAt: timestamp,

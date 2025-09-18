@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
 import { Message } from '../domain/message.interface';
+import { ChatRatingDto } from '../dto/chat-rating.dto';
 
 // Repositorio para gestionar sesiones y mensajes de chat en la base de datos.
 @Injectable()
@@ -23,4 +24,14 @@ export class ChatRepository {
     await this.prisma.message.create({ data: { role: m.role, text: m.text, sessionId: m.sessionId } });
   }
 
+  // Guarda una calificación de chat en la base de datos.
+  async saveRating(dto: ChatRatingDto): Promise<void> {
+    await this.prisma.chatRating.create({
+      data: {
+        sessionId: dto.sessionId,
+        rating: dto.rating,
+        comment: dto.comment
+      }
+    });
+  }
 }

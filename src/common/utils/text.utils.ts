@@ -15,10 +15,24 @@ export function generateDeterministicUuid(text: string, source?: string): string
 }
 
 // Fragmenta el texto en frases normalizadas para procesamiento semántico.
-export function fragmentText(text: string): string[] {
+export function fragmentText(text: string, maxLength: number = 500): string[] {
   const sentences = splitSentences(text)
     .filter((item: any) => item.type === 'Sentence')
-    .map((item: any) => normalizeText(item.raw))
+    .map((item: any) => item.raw.trim())
     .filter(Boolean);
-  return sentences;
+
+  const fragments: string[] = [];
+  let current = '';
+
+  for (const sentence of sentences) {
+    if ((current + ' ' + sentence).trim().length <= maxLength) {
+      current = current ? current + ' ' + sentence : sentence;
+    } else {
+      if (current) fragments.push(current.trim());
+      current = sentence;
+    }
+  }
+  if (current) fragments.push(current.trim());
+
+  return fragments.map(normalizeText);
 }

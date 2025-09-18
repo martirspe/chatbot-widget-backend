@@ -16,7 +16,7 @@ export class RagService {
   ) { }
 
   // Genera una respuesta según el modo configurado y los parámetros de búsqueda.
-  async answer(query: string, topK: number = 1, minScore: number = 0.7, source?: string) {
+  async answer(query: string, topK: number = 5, minScore: number = 0.5, source?: string) {
     if (this.isTestMode()) {
       return this.mockAnswer(query);
     }
