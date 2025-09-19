@@ -1,8 +1,8 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { VectorStore } from '../../rag/domain/vector-store.interface';
-import { IngestDocDto } from '../dto/ingest-doc.dto';
-import { generateDeterministicUuid } from '../../../common/utils/text.utils';
-import { formatError } from '../../../common/utils/error.utils';
+import { VectorStore } from '@modules/rag/domain/vector-store.interface';
+import { IngestDocDto } from '@modules/ingest/dto/ingest-doc.dto';
+import { generateDeterministicUuid } from '@common/utils/text.utils';
+import { formatError } from '@common/utils/error.utils';
 
 // Servicio para procesar y enviar documentos enriquecidos al vector store.
 @Injectable()

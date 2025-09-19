@@ -1,10 +1,10 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { VectorStore } from '../../domain/vector-store.interface';
-import { EmbeddingClient } from '../../domain/embedding-client.interface';
-import { QdrantSearchResult } from '../../domain/qdrant-search-result.interface';
-import { generateDeterministicUuid, normalizeText, fragmentText } from '../../../../common/utils/text.utils';
-import { formatError } from '../../../../common/utils/error.utils';
+import { VectorStore } from '@modules/rag/domain/vector-store.interface';
+import { EmbeddingClient } from '@modules/rag/domain/embedding-client.interface';
+import { QdrantSearchResult } from '@modules/rag/domain/qdrant-search-result.interface';
+import { generateDeterministicUuid, normalizeText, fragmentText } from '@common/utils/text.utils';
+import { formatError } from '@common/utils/error.utils';
 
 // Implementa la lógica de almacenamiento y búsqueda de vectores en Qdrant.
 @Injectable()

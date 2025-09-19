@@ -1,6 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import { IsEnum, IsOptional, IsString, validateSync } from 'class-validator';
-import { formatError } from '../common/utils/error.utils';
+import { formatError } from '@common/utils/error.utils';
 
 // Enum para definir los entornos de ejecución de la aplicación.
 enum NodeEnv { development = 'development', production = 'production', test = 'test' }

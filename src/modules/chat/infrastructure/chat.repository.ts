@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../infrastructure/prisma/prisma.service';
-import { Message } from '../domain/message.interface';
-import { ChatRatingDto } from '../dto/chat-rating.dto';
+import { PrismaService } from '@infrastructure/prisma/prisma.service';
+import { Message } from '@modules/chat/domain/message.interface';
+import { ChatRatingDto } from '@modules/chat/dto/chat-rating.dto';
 
 // Repositorio para gestionar sesiones y mensajes de chat en la base de datos.
 @Injectable()

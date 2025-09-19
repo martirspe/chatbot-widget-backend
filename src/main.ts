@@ -1,9 +1,9 @@
 import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from '@app/app.module';
+import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
 
 // Punto de entrada principal que configura seguridad, validaciones, manejo global de errores y CORS.
 async function bootstrap() {

@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
-import { ChatService } from '../application/chat.service';
-import { ChatMessageDto } from '../dto/chat-message.dto';
-import { ChatRatingDto } from '../dto/chat-rating.dto';
+import { ChatService } from '@modules/chat/application/chat.service';
+import { ChatMessageDto } from '@modules/chat/dto/chat-message.dto';
+import { ChatRatingDto } from '@modules/chat/dto/chat-rating.dto';
 
 // Controlador que expone el endpoint POST /chat/message para procesar mensajes de usuario.
 @Controller('chat')

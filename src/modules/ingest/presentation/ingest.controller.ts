@@ -7,8 +7,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { IngestService } from '../application/ingest.service';
-import { IngestDocsDto } from '../dto/ingest-doc.dto';
+import { IngestService } from '@modules/ingest/application/ingest.service';
+import { IngestDocsDto } from '@modules/ingest/dto/ingest-doc.dto';
 import * as pdfParse from 'pdf-parse';
 import * as mammoth from 'mammoth';
 import * as xlsx from 'xlsx';

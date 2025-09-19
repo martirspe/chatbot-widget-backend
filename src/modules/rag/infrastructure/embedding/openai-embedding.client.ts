@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { EmbeddingClient } from '../../domain/embedding-client.interface';
+import { EmbeddingClient } from '@modules/rag/domain/embedding-client.interface';
 
 // Cliente de embedding que utiliza la API de OpenAI para generar vectores de texto.
 @Injectable()

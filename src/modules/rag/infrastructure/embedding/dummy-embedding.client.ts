@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { EmbeddingClient } from '../../domain/embedding-client.interface';
+import { EmbeddingClient } from '@modules/rag/domain/embedding-client.interface';
 
 // Cliente de embedding de prueba que retorna un vector fijo para simular el comportamiento de un modelo real.
 @Injectable()

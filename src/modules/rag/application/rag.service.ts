@@ -1,8 +1,9 @@
 import { Injectable, Inject, InternalServerErrorException, Logger } from '@nestjs/common';
-import { VectorStore } from '../domain/vector-store.interface';
-import { LLMClient } from '../domain/llm-client.interface';
-import { RagMode } from '../domain/rag-mode.interface';
-import { formatError } from '../../../common/utils/error.utils';
+import { VectorStore } from '@modules/rag/domain/vector-store.interface';
+import { LLMClient } from '@modules/rag/domain/llm-client.interface';
+import { RagMode } from '@modules/rag/domain/rag-mode.interface';
+import { metadataToText } from '@common/utils/text.utils';
+import { formatError } from '@common/utils/error.utils';
 
 // Servicio RAG para generar respuestas usando búsqueda semántica y LLM.
 @Injectable()
@@ -81,16 +82,30 @@ export class RagService {
   // Busca documentos en Qdrant y genera respuesta con LLM usando el contexto.
   private async realAnswerSafe(query: string, topK: number, minScore: number, source?: string) {
     const docs = await this.vectorStore.search(query, topK, minScore, source);
-    const filteredDocs = docs.filter(d => d.score >= minScore && d.text && d.text.trim().length > 0);
-    const context = filteredDocs.map((d) => {
-      let meta = '';
-      if (d.metadata) {
+    const filteredDocs = docs.filter(d => d.score >= minScore && d.text?.trim());
+
+    const context = filteredDocs.map((doc) => {
+      let metadata: Record<string, any> = {};
+      if (doc.metadata) {
         try {
-          const m = typeof d.metadata === 'string' ? JSON.parse(d.metadata) : d.metadata;
-          meta = `[${m.title ?? ''}] (${m.section ?? ''})`;
-        } catch { /* ignore */ }
+          metadata = typeof doc.metadata === 'string' ? JSON.parse(doc.metadata) : doc.metadata;
+        } catch {
+          metadata = {};
+        }
       }
-      return `${meta}\n${d.text}`;
+
+      // Extrae título si existe y lo coloca al inicio
+      let titleText = '';
+      if (metadata.title) {
+        titleText = `Título: ${metadata.title}\n`;
+        delete metadata.title;
+      }
+
+      const metaText = metadataToText(metadata);
+
+      return metaText
+        ? `${titleText}${doc.text}\nInformación adicional:\n${metaText}`
+        : `${titleText}${doc.text}`;
     });
     const reply = await this.llm.generate(query, context);
     return { reply, context, documents: filteredDocs };

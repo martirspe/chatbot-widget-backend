@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import { EmbeddingClient } from '../../domain/embedding-client.interface';
-import { formatError } from '../../../../common/utils/error.utils';
+import { EmbeddingClient } from '@modules/rag/domain/embedding-client.interface';
+import { formatError } from '@common/utils/error.utils';
 
 // Cliente de embeddings local usando microservicio Python con sentence-transformers.
 @Injectable()

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { INestApplication } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { formatError } from '../../common/utils/error.utils';
+import { formatError } from '@common/utils/error.utils';
 
 // Servicio que gestiona la conexión y cierre de Prisma con manejo eficiente de errores.
 @Injectable()

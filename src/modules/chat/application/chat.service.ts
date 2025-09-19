@@ -1,12 +1,12 @@
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { ChatRepository } from '../infrastructure/chat.repository';
-import { ChatMessageDto } from '../dto/chat-message.dto';
-import { RagService } from '../../rag/application/rag.service';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
-import { formatError } from '../../../common/utils/error.utils';
-import { PromotionDto } from '../dto/promotion.dto';
-import { ChatRatingDto } from '../dto/chat-rating.dto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { RagService } from '@modules/rag/application/rag.service';
+import { formatError } from '@common/utils/error.utils';
+import { ChatRepository } from '@modules/chat/infrastructure/chat.repository';
+import { ChatMessageDto } from '@modules/chat/dto/chat-message.dto';
+import { PromotionDto } from '@modules/chat/dto/promotion.dto';
+import { ChatRatingDto } from '@modules/chat/dto/chat-rating.dto';
 
 // Servicio principal para procesar mensajes de chat, gestionar sesiones y cachear respuestas.
 @Injectable()

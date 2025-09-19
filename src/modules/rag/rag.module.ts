@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { RagService } from './application/rag.service';
-import { QdrantStore } from './infrastructure/vector/qdrant.store';
-import { OpenAiClient } from './infrastructure/llm/openai.client';
-import { OpenAiEmbeddingClient } from './infrastructure/embedding/openai-embedding.client';
-import { LocalEmbeddingClient } from './infrastructure/embedding/local-embedding-client';
+import { RagService } from '@modules/rag/application/rag.service';
+import { QdrantStore } from '@modules/rag/infrastructure/vector/qdrant.store';
+import { OpenAiClient } from '@modules/rag/infrastructure/llm/openai.client';
+import { OpenAiEmbeddingClient } from '@modules/rag/infrastructure/embedding/openai-embedding.client';
+import { LocalEmbeddingClient } from '@modules/rag/infrastructure/embedding/local-embedding-client';
 
 // Selecciona el proveedor de embeddings según la disponibilidad de la API key de OpenAI.
 const embeddingProvider = process.env.OPENAI_API_KEY
