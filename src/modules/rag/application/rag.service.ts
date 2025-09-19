@@ -16,7 +16,7 @@ export class RagService {
   ) { }
 
   // Genera una respuesta según el modo configurado y los parámetros de búsqueda.
-  async answer(query: string, topK: number = 5, minScore: number = 0.5, source?: string) {
+  async answer(query: string, topK: number = 5, minScore: number = 0.3, source?: string) {
     if (this.isTestMode()) {
       return this.mockAnswer(query);
     }
@@ -81,9 +81,19 @@ export class RagService {
   // Busca documentos en Qdrant y genera respuesta con LLM usando el contexto.
   private async realAnswerSafe(query: string, topK: number, minScore: number, source?: string) {
     const docs = await this.vectorStore.search(query, topK, minScore, source);
-    const context = docs.map((d) => d.text);
+    const filteredDocs = docs.filter(d => d.score >= minScore && d.text && d.text.trim().length > 0);
+    const context = filteredDocs.map((d) => {
+      let meta = '';
+      if (d.metadata) {
+        try {
+          const m = typeof d.metadata === 'string' ? JSON.parse(d.metadata) : d.metadata;
+          meta = `[${m.title ?? ''}] (${m.section ?? ''})`;
+        } catch { /* ignore */ }
+      }
+      return `${meta}\n${d.text}`;
+    });
     const reply = await this.llm.generate(query, context);
-    return { reply, context, documents: docs };
+    return { reply, context, documents: filteredDocs };
   }
 
   // Retorna una respuesta simulada para pruebas.

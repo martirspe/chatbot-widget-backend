@@ -23,7 +23,7 @@ export class IngestController {
   @Post()
   async ingest(@Body() dto: IngestDocsDto) {
     if (!dto.docs || !Array.isArray(dto.docs) || dto.docs.length === 0) {
-      throw new BadRequestException('El campo "docs" debe ser un array no vacío de documentos a ingresar.');
+      throw new BadRequestException('El campo "docs" debe ser un array con al menos un documento.');
     }
     return await this.ingestService.ingestDocs(dto.docs);
   }

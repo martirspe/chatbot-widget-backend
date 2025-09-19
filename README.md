@@ -11,8 +11,8 @@ API backend construida con **NestJS** que gestiona la lógica, procesamiento y a
 - **NestJS + TypeScript**
 - **Prisma (PostgreSQL)**
 - **Qdrant (Vector DB)**
-- **OpenAI (LLM)**
-- **Redis**
+- **OpenAI (LLM/Embeddings)**
+- **Redis (Cache)**
 - **Docker**
 - **npm**
 
@@ -50,7 +50,7 @@ CORS_ORIGIN=http://localhost:4200
 LOG_LEVEL=info
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/chatbot_db"
 REDIS_URL=redis://localhost:6379
-OPENAI_API_KEY=
+OPENAI_API_KEY=replace_me
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION=docs
 RAG_TEST_MODE=false

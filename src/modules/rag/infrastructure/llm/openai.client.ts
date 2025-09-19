@@ -18,7 +18,7 @@ export class OpenAiClient implements LLMClient {
       {
         role: 'system',
         content:
-          'Eres Asistente MARRSO. Responde en español de forma cordial y precisa. No inventes datos.',
+          'Eres Lia, asistente de MARRSO. Responde solo con el contexto. Si no tienes información suficiente, indícalo. No inventes.'
       },
       {
         role: 'user',
