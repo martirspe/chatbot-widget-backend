@@ -8,10 +8,6 @@ export class ChatMessageDto {
 
   @IsOptional()
   @IsString()
-  sessionId?: string;
-
-  @IsOptional()
-  @IsString()
   source?: string;
 
   @IsOptional()
@@ -19,4 +15,8 @@ export class ChatMessageDto {
 
   @IsOptional()
   minScore?: number;
+
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
 }

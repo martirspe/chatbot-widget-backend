@@ -20,6 +20,11 @@ export class ChatService {
     @InjectRedis() private readonly redis: Redis,
   ) { }
 
+  // Crea una nueva sesión de chat y devuelve su ID.
+  async createSession(): Promise<string> {
+    return await this.repo.ensureSession();
+  }
+
   // Procesa el mensaje, gestiona sesión, consulta RAG y cachea la respuesta.
   async processMessage(dto: ChatMessageDto) {
     try {

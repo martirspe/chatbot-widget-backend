@@ -1,5 +1,6 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { ChatService } from '@modules/chat/application/chat.service';
+import { StartSessionResponseDto } from '@modules/chat/dto/start-session-response.dto';
 import { ChatMessageDto } from '@modules/chat/dto/chat-message.dto';
 import { ChatRatingDto } from '@modules/chat/dto/chat-rating.dto';
 
@@ -11,6 +12,13 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService
   ) { }
+
+  // Inicia una nueva sesión de chat y retorna el ID de la sesión.
+  @Post('start-session')
+  async startSession(): Promise<StartSessionResponseDto> {
+    const sessionId = await this.chatService.createSession();
+    return { sessionId };
+  }
 
   // Procesa el mensaje recibido y retorna la respuesta generada por el servicio de chat.
   @Post('message')
