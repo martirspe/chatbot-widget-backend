@@ -5,7 +5,8 @@ export type Role = 'user' | 'assistant';
 export interface Message {
     id?: string;
     role: Role;
-    text: string;
+    message: string;
     sessionId: string;
+    metadata?: any;
     createdAt?: Date;
 }

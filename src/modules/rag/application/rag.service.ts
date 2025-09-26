@@ -54,8 +54,8 @@ export class RagService {
   // Genera respuesta solo con LLM, sin contexto documental.
   private async llmOnlyAnswer(query: string) {
     try {
-      const reply = await this.llm.generate(query, []);
-      return { reply, context: [], documents: [] };
+      const response = await this.llm.generate(query, []);
+      return { response, context: [], documents: [] };
     } catch (error) {
       this.logger.error(`Error en LLM: ${formatError(error)}`);
       throw new InternalServerErrorException('No se pudo obtener respuesta del LLM.');
@@ -67,13 +67,13 @@ export class RagService {
     const docs = await this.vectorStore.search(query, topK, minScore, source);
     if (!docs || docs.length === 0) {
       return {
-        reply: 'No se encontró información relevante para tu consulta.',
+        response: 'No se encontró información relevante para tu consulta.',
         context: [],
         documents: []
       };
     }
     return {
-      reply: 'Documentos encontrados.',
+      response: 'Documentos encontrados.',
       context: docs.map(d => d.text),
       documents: docs
     };
@@ -107,14 +107,14 @@ export class RagService {
         ? `${titleText}${doc.text}\nInformación adicional:\n${metaText}`
         : `${titleText}${doc.text}`;
     });
-    const reply = await this.llm.generate(query, context);
-    return { reply, context, documents: filteredDocs };
+    const response = await this.llm.generate(query, context);
+    return { response, context, documents: filteredDocs };
   }
 
   // Retorna una respuesta simulada para pruebas.
   private mockAnswer(query: string) {
     return {
-      reply: `Respuesta simulada para: "${query}"`,
+      response: `Respuesta simulada para: "${query}"`,
       context: [],
       documents: []
     };

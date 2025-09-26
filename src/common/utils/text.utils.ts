@@ -5,21 +5,21 @@ import { split as splitSentences } from 'sentence-splitter';
 const NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
 // Normaliza texto eliminando espacios y pasando a minúsculas.
-export function normalizeText(text: string): string {
-  return text.replace(/\s+/g, ' ').trim().toLowerCase();
+export function normalizeText(message: string): string {
+  return message.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
 // Genera un UUID determinístico a partir del texto y la fuente.
-export function generateDeterministicUuid(text: string, source?: string): string {
-  return uuidv5((source ?? '') + '|' + normalizeText(text), NAMESPACE);
+export function generateDeterministicUuid(message: string, source?: string): string {
+  return uuidv5((source ?? '') + '|' + normalizeText(message), NAMESPACE);
 }
 
 // Fragmenta el texto en frases normalizadas para procesamiento semántico.
-export function fragmentText(text: string, maxLength: number = 500): string[] {
-  const normalized = normalizeText(text);
+export function fragmentText(message: string, maxLength: number = 500): string[] {
+  const normalized = normalizeText(message);
   if (normalized.length <= maxLength) return [normalized];
 
-  const sentences = splitSentences(text)
+  const sentences = splitSentences(message)
     .filter((item: any) => item.type === 'Sentence')
     .map((item: any) => item.raw.trim())
     .filter(Boolean);

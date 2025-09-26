@@ -28,22 +28,22 @@ export class ChatService {
   // Procesa el mensaje, gestiona sesión, consulta RAG y cachea la respuesta.
   async processMessage(dto: ChatMessageDto) {
     try {
-      const { text, sessionId, source, topK, minScore } = dto;
-      const cacheKey = `chat:${sessionId}:${text}:${source ?? ''}:${topK}:${minScore}`;
+      const { message, sessionId, source, topK, minScore } = dto;
+      const cacheKey = `chat:${sessionId}:${message}:${source ?? ''}:${topK}:${minScore}`;
       const cached = await this.getCachedMessage(cacheKey);
       if (cached && cached.startsWith('{')) {
-        const { reply, documents } = JSON.parse(cached);
-        return { sessionId, reply, documents };
+        const { response, documents } = JSON.parse(cached);
+        return { sessionId, response, documents };
       }
 
       const sid = await this.repo.ensureSession(sessionId);
-      await this.repo.addMessage({ role: 'user', text, sessionId: sid });
-      const { reply, documents } = await this.rag.answer(text, topK, minScore);
-      await this.repo.addMessage({ role: 'assistant', text: reply, sessionId: sid });
+      await this.repo.addMessage({ role: 'user', message, sessionId: sid });
+      const { response, documents } = await this.rag.answer(message, topK, minScore);
+      await this.repo.addMessage({ role: 'assistant', message: response, sessionId: sid });
 
-      await this.cacheMessage(cacheKey, JSON.stringify({ reply, documents }));
+      await this.cacheMessage(cacheKey, JSON.stringify({ response, documents }));
 
-      return { sessionId: sid, reply, documents };
+      return { sessionId: sid, response, documents };
     } catch (error) {
       this.logger.error(`Error en processMessage: ${formatError(error)}`);
       throw new InternalServerErrorException('Error procesando el mensaje');
@@ -66,7 +66,7 @@ export class ChatService {
       const sid = await this.repo.ensureSession(sessionId);
       await this.repo.addMessage({
         role: 'user',
-        text: '[Solicitud de transferencia a agente humano]',
+        message: '[Solicitud de transferencia a agente humano]',
         sessionId: sid
       });
       return {

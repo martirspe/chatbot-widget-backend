@@ -34,7 +34,7 @@ model Session {
 model Message {
   id        String    @id @default(cuid())
   role      String
-  text      String
+  message      String
   session   Session   @relation(fields: [sessionId], references: [id])
   sessionId String
   metadata  Json?

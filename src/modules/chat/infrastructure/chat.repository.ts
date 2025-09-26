@@ -21,7 +21,13 @@ export class ChatRepository {
 
   // Agrega un mensaje a la base de datos asociado a una sesión.
   async addMessage(m: Message): Promise<void> {
-    await this.prisma.message.create({ data: { role: m.role, text: m.text, sessionId: m.sessionId } });
+    await this.prisma.message.create({
+      data: {
+        role: m.role,
+        message: m.message,
+        sessionId: m.sessionId
+      }
+    });
   }
 
   // Guarda una calificación de chat en la base de datos.
