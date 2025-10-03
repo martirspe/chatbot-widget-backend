@@ -53,7 +53,7 @@ export class OpenAiClient implements LLMClient {
         content: SYSTEM_PROMPT,
       },
       {
-        role: 'assistant',
+        role: 'user',
         content: contextText,
       },
     ];

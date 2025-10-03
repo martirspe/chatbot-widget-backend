@@ -100,13 +100,15 @@ export class ChatService {
     ];
   }
 
-  async rateChat(dto: ChatRatingDto): Promise<{ success: boolean }> {
+  async rateChat(dto: ChatRatingDto): Promise<{ status: string; response: string }> {
     try {
       await this.repo.saveRating(dto);
-      return { success: true };
+      this.logger.log(`Calificación guardada correctamente para sesión: ${dto.sessionId ?? 'desconocida'}`);
+      return { status: 'success', response: 'Gracias por calificar nuestro servicio.' };
     } catch (error) {
-      this.logger.error('Error guardando calificación:', error);
-      return { success: false };
+      const formattedError = formatError(error);
+      this.logger.error(`Error guardando calificación para sesión: ${dto.sessionId ?? 'desconocida'} - ${formattedError}`);
+      return { status: 'error', response: 'No se pudo guardar la calificación. Inténtalo de nuevo más tarde.' };
     }
   }
 }
