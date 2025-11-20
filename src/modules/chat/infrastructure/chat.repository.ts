@@ -14,7 +14,15 @@ export class ChatRepository {
 
   // Asegura que exista una sesión y crea una nueva si no se proporciona sessionId.
   async ensureSession(sessionId?: string): Promise<string> {
-    if (sessionId) return sessionId;
+    if (sessionId) {
+      // Si enviaron un sessionId, validar que no esté cerrada
+      const existing = await this.prisma.session.findUnique({
+        where: { id: sessionId },
+        select: { id: true, endedAt: true }
+      });
+      if (existing && !existing.endedAt) return existing.id;
+      // Si no existe o está cerrada, crear una nueva
+    }
     const s = await this.prisma.session.create({ data: {} });
     return s.id;
   }
@@ -25,7 +33,8 @@ export class ChatRepository {
       data: {
         role: m.role,
         message: m.message,
-        sessionId: m.sessionId
+        sessionId: m.sessionId,
+        metadata: m.metadata
       }
     });
   }
@@ -39,5 +48,22 @@ export class ChatRepository {
         comment: dto.comment
       }
     });
+  }
+
+  // Marca la sesión como finalizada (soft close) sin borrar datos.
+  async closeSession(sessionId: string): Promise<void> {
+    if (!sessionId) return;
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { endedAt: new Date() }
+    });
+  }
+
+  // Registra un evento de transferencia en AgentTransfer cuando haya userId
+  async recordAgentTransfer(sessionId: string, _event: 'requested' | 'assigned' | 'completed'): Promise<void> {
+    if (!sessionId) return;
+    const s = await this.prisma.session.findUnique({ where: { id: sessionId }, select: { userId: true } });
+    if (!s?.userId) return; // si no hay usuario asociado, omitir
+    await this.prisma.agentTransfer.create({ data: { userId: s.userId, sessionId } });
   }
 }

@@ -1,5 +1,5 @@
 // Define los roles permitidos en el chat.
-export type Role = 'user' | 'assistant';
+export type Role = 'user' | 'assistant' | 'system';
 
 // Interface que representa la estructura de un mensaje de chat.
 export interface Message {

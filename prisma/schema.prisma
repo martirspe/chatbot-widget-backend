@@ -29,6 +29,9 @@ model Session {
   chatRatings ChatRating[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  endedAt  DateTime?
+
+  @@index([endedAt])
 }
 
 model Message {

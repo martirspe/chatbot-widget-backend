@@ -61,23 +61,32 @@ export class ChatService {
   }
 
   // Marca la sesión para transferencia a un agente humano.
-  async transferToAgent(sessionId?: string) {
+  async transferToAgent(sessionId?: string, userMessage?: string) {
     try {
       const sid = await this.repo.ensureSession(sessionId);
+      if (userMessage && userMessage.trim()) {
+        await this.repo.addMessage({ role: 'user', message: userMessage, sessionId: sid });
+      }
       await this.repo.addMessage({
-        role: 'user',
+        role: 'system',
         message: '[Solicitud de transferencia a agente humano]',
-        sessionId: sid
-      });
-      return {
         sessionId: sid,
-        message: 'Un agente humano se pondrá en contacto contigo en breve.'
-      };
+        metadata: { type: 'transfer_request', source: userMessage ? 'user-intent' : 'system', detectedAt: new Date().toISOString() }
+      });
+      // Idempotencia básica: evitar múltiples avisos en ventana corta
+      const key = `agent_transfer:${sid}`;
+      const already = await this.redis.get(key);
+      if (!already) {
+        await this.redis.set(key, 'requested', 'EX', 1800); // 30 min
+        // Publica eventos para sistemas externos (contact center, notificador, etc.)
+        await this.redis.publish('agent_transfer_requested', JSON.stringify({ sessionId: sid, ts: Date.now() }));
+        await this.redis.publish('agent_transfer_status', JSON.stringify({ sessionId: sid, status: 'requested', ts: Date.now() }));
+      }
+      // Auditoría persistente (si existe userId en la sesión)
+      await this.repo.recordAgentTransfer(sid, 'requested');
+      return { sessionId: sid, response: 'Un agente humano se pondrá en contacto contigo en breve.' };
     } catch (error) {
-      return {
-        sessionId: sessionId,
-        message: 'El agente se comunicará contigo pronto.'
-      };
+      return { sessionId: sessionId, response: 'El agente se comunicará contigo pronto.' };
     }
   }
 
@@ -110,5 +119,44 @@ export class ChatService {
       this.logger.error(`Error guardando calificación para sesión: ${dto.sessionId ?? 'desconocida'} - ${formattedError}`);
       return { status: 'error', response: 'No se pudo guardar la calificación. Inténtalo de nuevo más tarde.' };
     }
+  }
+
+  // Finaliza una sesión de chat (soft close) sin borrar datos.
+  async endSession(sessionId?: string): Promise<{ status: string }>{
+    try {
+      if (!sessionId) return { status: 'noop' };
+      await this.repo.closeSession(sessionId);
+      return { status: 'ok' };
+    } catch (error) {
+      this.logger.error(`Error cerrando sesión ${sessionId}: ${formatError(error)}`);
+      return { status: 'error' };
+    }
+  }
+
+  // Obtiene el estado de transferencia a agente humano
+  async getTransferStatus(sessionId?: string): Promise<{ sessionId?: string; status: 'none' | 'requested' | 'assigned' | 'completed' }>{
+    if (!sessionId) return { status: 'none' };
+    const sid = sessionId;
+    const key = `agent_transfer:${sid}`;
+    const val = await this.redis.get(key);
+    const status = (val as 'requested' | 'assigned' | 'completed' | null) || 'none';
+    return { sessionId: sid, status };
+  }
+
+  // Establece el estado de transferencia (para integración con contact center)
+  async setTransferStatus(sessionId: string, status: 'requested' | 'assigned' | 'completed'): Promise<{ sessionId: string; status: string }>{
+    const sid = await this.repo.ensureSession(sessionId);
+    const key = `agent_transfer:${sid}`;
+    // Mantener TTL si ya existe; sino asignar uno por defecto
+    const ttl = await this.redis.ttl(key);
+    if (ttl && ttl > 0) {
+      await this.redis.set(key, status, 'EX', ttl);
+    } else {
+      await this.redis.set(key, status, 'EX', 1800);
+    }
+    await this.redis.publish('agent_transfer_status', JSON.stringify({ sessionId: sid, status, ts: Date.now() }));
+    // Auditoría persistente (si existe userId en la sesión)
+    await this.repo.recordAgentTransfer(sid, status);
+    return { sessionId: sid, status };
   }
 }
